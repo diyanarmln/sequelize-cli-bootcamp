@@ -1,70 +1,167 @@
 import db from './models/index.mjs';
 
 const command = process.argv[2];
+const values = process.argv.slice(3);
 
-if (command === 'create') { db.Trip
-  .create({
-    name: process.argv[3],
-    created_at: Date.now(),
-    updated_at: Date.now(),
-  })
-  .then((trip) => {
-    console.log('success');
-    console.log(trip);
-  })
-  .catch((error) => console.log(error)); }
+const funcObj = {
+  create: (input) => {
+    db.Trip
+      .create({
+        name: input[0],
+        created_at: Date.now(),
+        updated_at: Date.now(),
+      })
+      .then((trip) => {
+        console.log('create trip success');
+        console.log(trip);
+        db.sequelize.close();
+      })
+      .catch((error) => console.log(error));
+  },
+  'add-attrac': (input) => {
+    let retriveTripId;
+    let retrieveCategoryId;
 
-if (command === 'add-attrac') {
-  const tripName = process.argv[3];
-  let retriveTripId;
-
-  db.Trip.findAll({
-    attributes: ['id'],
-    where: {
-      name: [tripName],
-    },
-  })
-    .then((trips) => {
-      retriveTripId = trips[0].dataValues.id;
-      return db.Attraction
-        .create({
-          name: process.argv[4],
-          trip_id: retriveTripId,
-          created_at: Date.now(),
-          updated_at: Date.now(),
-        })
-        .then((attraction) => {
-          console.log('success');
-          console.log(attraction);
-        })
-        .catch((error) => console.log(error));
+    db.Trip.findAll({
+      attributes: ['id'],
+      where: {
+        name: input[0],
+      },
     })
-    .catch((error) => console.log(error));
-}
+      .then((trips) => {
+        retriveTripId = trips[0].dataValues.id;
+        return db.Category.findAll({
+          attributes: ['id'],
+          where: {
+            name: input[2],
+          },
+        }).then((categories) => {
+          retrieveCategoryId = categories[0].dataValues.id;
+          return db.Attraction
+            .create({
+              name: input[1],
+              trip_id: retriveTripId,
+              created_at: Date.now(),
+              updated_at: Date.now(),
+              category_id: retrieveCategoryId,
+            })
+            .then((attraction) => {
+              console.log('success');
+              console.log(attraction);
+              db.sequelize.close();
+            })
+            .catch((error) => console.log(error));
+        })
+          .catch((error) => console.log(error));
+      })
+      .catch((error) => console.log(error));
+  },
+  trip: (input) => {
+    const tripName = input[0];
+    let retrieveTripId;
 
-if (command === 'trip') {
-  const tripName = process.argv[3];
-  let retrieveTripId;
+    db.Trip.findAll({
+      attributes: ['id'],
+      where: {
+        name: [tripName],
+      },
+    })
+      .then((trips) => {
+        retrieveTripId = trips[0].dataValues.id;
+        return db.Attraction
+          .findAll({
+            attributes: ['name'],
+            where: {
+              trip_id: retrieveTripId,
+            },
+          })
+          .then((attraction) => {
+            console.log(attraction[0].dataValues.name);
+            db.sequelize.close();
+          })
+          .catch((error) => console.log(error));
+      })
+      .catch((error) => console.log(error));
+  },
+  'add-category': (input) => {
+    db.Category.create({
+      name: input[0],
+      created_at: Date.now(),
+      updated_at: Date.now(),
+    }).then((categories) => {
+      console.log('category created');
+      console.log(categories);
+    }).catch((error) => console.log(error));
+  },
+  'category-trip': (input) => {
+    let retrieveTripId;
+    let retrieveCategoryId;
 
-  db.Trip.findAll({
-    attributes: ['id'],
-    where: {
-      name: [tripName],
-    },
-  })
-    .then((trips) => {
-      retrieveTripId = trips[0].dataValues.id;
+    db.Trip.findAll({
+      attributes: ['id'],
+      where: {
+        name: input[0],
+      },
+    })
+      .then((trips) => {
+        retrieveTripId = trips[0].dataValues.id;
+        return db.Category.findAll({
+          attributes: ['id'],
+          where: {
+            name: input[1],
+          },
+        }).then((categories) => {
+          retrieveCategoryId = categories[0].dataValues.id;
+          return db.Attraction
+            .findAll({
+              attributes: ['name'],
+              where: {
+                trip_id: retrieveTripId,
+                category_id: retrieveCategoryId,
+              },
+            })
+            .then((attraction) => {
+              console.log('success');
+              console.log(attraction[0].dataValues.name);
+              db.sequelize.close();
+            })
+            .catch((error) => console.log(error));
+        })
+          .catch((error) => console.log(error));
+      })
+      .catch((error) => console.log(error));
+  },
+  'category-attractions': (input) => {
+    let retrieveCategoryId;
+
+    db.Category.findAll({
+      attributes: ['id'],
+      where: {
+        name: input[0],
+      },
+    }).then((categories) => {
+      retrieveCategoryId = categories[0].dataValues.id;
       return db.Attraction
         .findAll({
           attributes: ['name'],
           where: {
-            trip_id: retrieveTripId,
+            category_id: retrieveCategoryId,
           },
         })
         .then((attraction) => {
+          console.log('success');
           console.log(attraction[0].dataValues.name);
+          db.sequelize.close();
         })
         .catch((error) => console.log(error));
     })
-    .catch((error) => console.log(error));
+      .catch((error) => console.log(error));
+  },
+};
+
+if (!(command in funcObj)) {
+  console.log('invalid command');
+  process.exit();
 }
+
+funcObj[command](values);
