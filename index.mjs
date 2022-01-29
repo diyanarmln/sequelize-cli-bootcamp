@@ -8,8 +8,8 @@ const funcObj = {
     db.Trip
       .create({
         name: input[0],
-        created_at: Date.now(),
-        updated_at: Date.now(),
+        // created_at: Date.now(),
+        // updated_at: Date.now(),
       })
       .then((trip) => {
         console.log('create trip success');
@@ -57,17 +57,18 @@ const funcObj = {
       .catch((error) => console.log(error));
   },
   trip: (input) => {
-    const tripName = input[0];
+    // const tripName = input[0];
     let retrieveTripId;
 
     db.Trip.findAll({
       attributes: ['id'],
       where: {
-        name: [tripName],
+        name: input[0],
       },
     })
       .then((trips) => {
         retrieveTripId = trips[0].dataValues.id;
+        console.log(retrieveTripId);
         return db.Attraction
           .findAll({
             attributes: ['name'],
@@ -75,8 +76,11 @@ const funcObj = {
               trip_id: retrieveTripId,
             },
           })
-          .then((attraction) => {
-            console.log(attraction[0].dataValues.name);
+          .then((attractions) => {
+            attractions.forEach((attraction) => {
+              console.log(attraction.name);
+            });
+            // console.log(attraction[0].dataValues.name);
             db.sequelize.close();
           })
           .catch((error) => console.log(error));
@@ -120,9 +124,11 @@ const funcObj = {
                 category_id: retrieveCategoryId,
               },
             })
-            .then((attraction) => {
+            .then((attractions) => {
               console.log('success');
-              console.log(attraction[0].dataValues.name);
+              attractions.forEach((attraction) => {
+                console.log(attraction.name);
+              });
               db.sequelize.close();
             })
             .catch((error) => console.log(error));
@@ -148,9 +154,12 @@ const funcObj = {
             category_id: retrieveCategoryId,
           },
         })
-        .then((attraction) => {
+        .then((attractions) => {
           console.log('success');
-          console.log(attraction[0].dataValues.name);
+          // console.log(attraction[0].dataValues.name);
+          attractions.forEach((attraction) => {
+            console.log(attraction.name);
+          });
           db.sequelize.close();
         })
         .catch((error) => console.log(error));
